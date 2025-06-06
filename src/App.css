@@ -1,0 +1,10 @@
+.app-header {
+  background-color: var(--mantine-primary-color-filled);
+  color: white;
+}
+
+.error-modal {
+  .message {
+    white-space: pre-line;
+  }
+}
