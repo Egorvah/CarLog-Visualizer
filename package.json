@@ -1,0 +1,38 @@
+{
+  "name": "car_log_visualizer",
+  "description": "A lightweight tool to visualize car diagnostics data from CSV logs.",
+  "repo_url": "https://github.com/Egorvah/CarLog-Visualizer",
+  "homepage": "https://egorvah.github.io/CarLog-Visualizer",
+  "private": true,
+  "version": "0.6.3",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mantine/core": "^8.0.2",
+    "@mantine/hooks": "^8.0.2",
+    "papaparse": "^5.5.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@eslint-react/eslint-plugin": "^1.51.0",
+    "@eslint/js": "^9.25.0",
+    "@types/papaparse": "^5.3.16",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react-swc": "^3.9.0",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
+  }
+}
