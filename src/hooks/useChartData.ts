@@ -1,126 +1,88 @@
-import { useState, useEffect } from 'react'
-import { getMode } from '../utils/csv'
-import { sortPids } from '../utils/chart'
-import type { CsvData, Modes } from '../utils/csv'
+import { useState, useMemo } from 'react';
+import { getMode, getPidName, handleCsvData } from '../utils/csv';
+import { sortPids } from '../utils/chart';
+import type { CsvDatasets, CsvDataItem, FileDataMode, ChartData, Pid, fromTo } from '../types';
 
-type ChartDataItem = {
-  time: number | string;
-  prevState: Record<string, number>;
-  [pid: string]: number | string | Record<string, number>;
-};
+const useChartData = (datasets: CsvDatasets, activeDataset: string | null, activePids: Pid[]) => {
+  const [chartData, setChartData] = useState<ChartData>({});
+  const [xRange, setXRange] = useState<fromTo>([0, 0]);
 
-const useChartData = (data: CsvData[], activePids: string[]) => {
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-  const [mode, setMode] = useState<Modes>(null);
-  const [pids, setPids] = useState<string[]>([])
-  
-  useEffect(() => {
-    if (data.length > 0) {
-      const currentMode = getMode(data);
-      setMode(currentMode);
+  const isCompareMode = (): boolean => {
+    return Object.keys(datasets).length > 1 && activeDataset === null;
+  };
 
-      if (currentMode === 1) {
-        processingMode1(data, activePids);
-      } 
-      else if (currentMode === 2) {
-        processingMode2(data, activePids);
-      }
-    }
-  }, [data, activePids]); // eslint-disable-line react-hooks/exhaustive-deps
+  const getActiveDataset = (): CsvDataItem[] => {
+    return isCompareMode()
+      ? datasets[Object.keys(datasets)[0]]
+      : datasets[activeDataset ?? Object.keys(datasets)[0]];
+  };
 
-
-  const getPidName = (data: CsvData): string => {
+  const getPids = (mode: FileDataMode) => {
+    const data = getActiveDataset();
+    let pidData: string[] = [];
     if (mode === 1) {
-      return data?.UNITS 
-        ? String(`${ data.PID } (${ data.UNITS })`)
-        : String(data.PID);
+      pidData = [...new Set(data.map((item) => getPidName(item, mode)))]
+        .filter(pid => pid !== 'undefined');
     }
-    return '';
-  }
+    if (mode === 2) {
+      pidData = Object.keys(data[0]).filter(key => key !== 'time' && key !== '');
+    }
+    return sortPids(pidData);
+  };
 
-  const processingMode1 = (data: CsvData[], activePids: string[]) => {
-    const pidData = sortPids([...new Set(data.map(getPidName))].filter(pid => pid !== 'undefined'));
-    setPids(pidData);
+  const startProcessing = () => {
+    if (activePids.length < 1) {
+      setChartData({});
+    }
 
-    if (activePids.length === 0) {
-      setChartData([]);
+    const chartDataPids = Object.keys(chartData);
+    const addPids = activePids.filter(pid => !chartDataPids.includes(pid));
+    const removedPids = chartDataPids.filter(pid => !activePids.includes(pid));
+    if (!removedPids.length && !addPids.length) {
       return;
     }
 
-    const startSecond = Number(data[0].SECONDS);
-    const chartDataGroupedBySeconds = data
-      .filter((item: Record<string, string | number>) => activePids.includes(getPidName(item)))
-      .reduce<Record<string, CsvData[]>>((acc, item) => {
-        const key = (Number(item.SECONDS) - startSecond).toFixed(3);
-        if (!acc[key]) {
-          acc[key] = [];
-        }
-        acc[key].push(item);
-        return acc;
-      }, {});
-
-    if (Object.keys(chartDataGroupedBySeconds).length === 0) {
-      return;
-    }
-
-    const prevState: Record<string, number> = {}
-    const chartItems = Object.values(chartDataGroupedBySeconds).
-      map((groupData) => {
-        const chartItem: ChartDataItem = {
-          time: Number(Number(Number(groupData[0].SECONDS) - startSecond).toFixed(3)),
-          prevState: { ...prevState },
-        };
-
-        groupData.forEach(pidData => {
-          const value = Number(pidData.VALUE);
-          chartItem[getPidName(pidData)] = value;
-          prevState[getPidName(pidData)] = value;
-        });
-
-        return chartItem;
-      })
-      setChartData(chartItems)
-  }
-
-  const processingMode2 = (data: CsvData[], activePids: string[]) => {
-    const pidData = sortPids(Object.keys(data[0]).filter(key => key !== 'time' && key != ''));
-    setPids(pidData);
-
-    if (activePids.length === 0) {
-      setChartData([]);
-      return;
-    }
-
-    const prevState: Record<string, number> = {};
-    const chartItems = data.map(item => {
-      const chartItem: ChartDataItem = {
-        time: String(item.time),
-        prevState: { ...prevState },
-      };
-
-      activePids.forEach(pid => {
-        if (item[pid] !== '') {
-          const value = Number(item[pid]);
-          chartItem[pid] = value;
-          prevState[pid] = value;
-        }
+    let newChartData = {...chartData};
+    if (removedPids.length) {
+      removedPids.forEach((pid) => {
+        delete newChartData[pid];
       });
+    }
 
-      // If no active PIDs data, skip this item
-      if (Object.keys(chartItem).length === 2) {
+
+    if (addPids.length) {
+      const data = getActiveDataset();
+      const result = handleCsvData(data, addPids);
+      newChartData = {...newChartData,  ...result.data};
+      setXRange(result.xRange);
+    }
+
+    setChartData(newChartData);
+  };
+
+  const mode: FileDataMode = useMemo(
+    () => {
+      if (Object.keys(datasets).length < 1) {
         return null;
       }
+      const firstDatasetKey = Object.keys(datasets)[0];
+      return getMode(datasets[firstDatasetKey]);
+    },
+    [datasets]
+  );
 
-      return chartItem;
-    }).filter(item => item !== null);
+  const pids: Pid[] = useMemo(
+    () => getPids(mode),
+    [mode]
+  );
 
-    setChartData(chartItems);
-  }
+  useMemo(startProcessing, [activePids]);
   
   return {
     data: chartData,
     mode,
     pids,
+    xRange,
   };
-}
+};
 export default useChartData;

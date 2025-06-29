@@ -1,31 +1,22 @@
-import { useState } from 'react'
-import { AppShell, Center, Modal, Alert } from '@mantine/core'
+import { lazy, useState } from 'react';
+import { AppShell, Center, Modal, Alert } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import useDisplay from './hooks/useDisplay'
-import UploadCsv from './components/UploadCsv'
-import Charts from './components/Charts'
-import Header from './components/Header'
-import FilterPids from './components/FilterPids'
-import './App.css'
+import useDisplay from './hooks/useDisplay';
+import About from './components/About';
+import Header from './components/Header';
+import useFileStore from './stores/useFileStore';
+import './App.css';
 
-import type { CsvData } from './utils/csv'
+const FilterPids = lazy(() => import('./components/FilterPids'));
+const Charts = lazy(() => import('./components/Charts'));
 
 function App() {
   const [opened, { toggle }] = useDisclosure(true);
   const { isMobile } = useDisplay();
   const [error, setError] = useState<string | null>(null);
-  const [filename, setFilename] = useState<string | undefined>(undefined);
-  const [data, setData] = useState<CsvData[]>([]);
-  const [pids, setPids] = useState<string[]>([]);
-  const [activePids, setActivePids] = useState<string[]>([]);
+  const currentFile = useFileStore((state) => state.currentFilename);
   const appName = window?.document?.title;
-
-  const resetFile = () => {
-    setData([]);
-    setPids([]);
-    setActivePids([]);
-    setFilename(undefined);
-  }
+  const isWaitingUpload = currentFile == null;
 
   return (
     <>
@@ -35,8 +26,8 @@ function App() {
           width: 350,
           breakpoint: 'sm',
           collapsed: { 
-            desktop: pids.length === 0 ? true : !opened,
-            mobile: pids.length === 0 ? true : !opened
+            desktop: isWaitingUpload ? true : !opened,
+            mobile: isWaitingUpload ? true : !opened
           },
         }}
         padding="md"
@@ -44,43 +35,36 @@ function App() {
         <AppShell.Header>
           <Header
             appName={appName}
-            filename={filename}
             isMobile={isMobile}
             isOpenFilter={opened}
             onToggleFilter={toggle}
-            onResetFile={resetFile}
           />
         </AppShell.Header>
 
         <AppShell.Navbar pl="md" pb="md">
-          { pids.length > 0 && (
+          {!isWaitingUpload && (
             <FilterPids
-              pids={pids}
-              onActivePidsChange={setActivePids}
               onToggleFilter={toggle}
             />
           )}
         </AppShell.Navbar>
 
-        <AppShell.Main px={ isMobile && activePids.length ? '0' : '' }>
+        <AppShell.Main px={ isMobile && !isWaitingUpload ? '0' : '' }>
           <Center>
-            {data.length === 0 && (
-              <UploadCsv
+            {isWaitingUpload && (
+              <About
                 appName={appName}
-                onUpdateData={setData}
-                onUpdateFilename={setFilename}
                 onError={setError}
               />
             )}
-            {data.length > 0 && (
+
+            {!isWaitingUpload && (
               <Charts
-                data={data} 
-                activePids={activePids}
-                onUpdatePids={setPids}
                 isOpenFilter={opened}
                 onToggleFilter={toggle}
               />
             )}
+
             {error && (
               <Modal
                 title="Error"
@@ -98,7 +82,7 @@ function App() {
         </AppShell.Main>
       </AppShell>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

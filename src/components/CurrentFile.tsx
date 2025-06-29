@@ -1,12 +1,12 @@
-import { Group, Button, Text } from '@mantine/core'
+import { Group, Button, Text } from '@mantine/core';
 
-interface CurrentFileProps {
+interface ComponentProps {
   filename?: string;
   buttonColor?: string;
   onResetFile?: () => void;
 }
 
-function CurrentFile(props: CurrentFileProps) {
+function CurrentFile(props: ComponentProps) {
   return (
     <Group>
       <Text>File: { props?.filename || 'N/A' }</Text>
@@ -15,7 +15,6 @@ function CurrentFile(props: CurrentFileProps) {
         size="xs"
         color={ props?.buttonColor || 'white' }
         onClick={ props?.onResetFile }
-        style={{ marginLeft: 'auto' }}
       >
         Reset
       </Button>

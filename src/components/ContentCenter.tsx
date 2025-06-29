@@ -1,13 +1,19 @@
 
-import { Flex, Center } from '@mantine/core'
+import { Flex, Center } from '@mantine/core';
 
-function ContentCenter({ children }: { children: React.ReactNode }) {
+type ContentCenterProps = React.ComponentProps<typeof Center> & {
+  children: React.ReactNode;
+  ref?: any;
+};
+
+function ContentCenter(props: ContentCenterProps) {
   return (
-    <Center h="calc(100vh - var(--app-shell-header-height, 0px) - var(--app-shell-footer-height, 0px) - var(--app-shell-padding) * 2)">
+    <Center {...props} h="calc(100vh - var(--app-shell-header-height, 0px) - var(--app-shell-footer-height, 0px) - var(--app-shell-padding) * 2)">
       <Flex w="100%" direction="column">
-        {children}
+        {props.children}
       </Flex>
     </Center>
   );
 }
+
 export default ContentCenter;

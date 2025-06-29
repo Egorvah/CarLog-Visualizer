@@ -1,9 +1,10 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 import { createTheme, MantineProvider } from '@mantine/core';
 import type { MantineColorsTuple } from '@mantine/core';
-import '@mantine/core/styles.css'
-import App from './App.tsx'
+import App from './App.tsx';
+
+import '@mantine/core/styles.css';
 
 const myColor: MantineColorsTuple = [
   '#f1f1ff',
@@ -33,4 +34,4 @@ createRoot(document.getElementById('root')!).render(
       <App />
     </MantineProvider>
   </StrictMode>,
-)
+);

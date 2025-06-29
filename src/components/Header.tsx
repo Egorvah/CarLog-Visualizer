@@ -1,40 +1,52 @@
-import { Group, Title, Text, Image, Button, Menu } from '@mantine/core'
-import CurrentFile from './CurrentFile'
-import githubMarkSvg from '../assets/github-mark.svg'
-import filteEmptySvg from '../assets/filter-empty.svg'
-import filterFullSvg from '../assets/filter-full.svg'
+import { Group, Title, Text, Image, Button, Menu } from '@mantine/core';
+import CurrentFile from './CurrentFile';
+import useChartStore from '../stores/useChartStore';
+import useFileStore from '../stores/useFileStore';
+import githubMarkSvg from '../assets/github-mark.svg';
+import filteEmptySvg from '../assets/filter-empty.svg';
+import filterFullSvg from '../assets/filter-full.svg';
 
-interface HeaderProps {
+interface ComponentProps {
   appName: string;
-  filename?: string;
   isMobile?: boolean;
   isOpenFilter?: boolean;
   onToggleFilter?: () => void;
-  onResetFile?: () => void;
 }
 
-function Header(props: HeaderProps) {
+function Header(props: ComponentProps) {
+  const currentFilename = useFileStore((state) => state.currentFilename);
+  const removeFile = useFileStore((state) => state.removeFile);
+  const clearAllChartData = useChartStore((state) => state.clearAll);
+
+  const handleReset = () => {
+    if (currentFilename != null) {
+      removeFile(currentFilename);
+      clearAllChartData();
+    }
+  };
 
   const mobileCntent = (
-    <Menu withArrow>
+    <Menu withArrow position="bottom-end">
       <Menu.Target>
         <Button
           variant="outline"
           color="white"
-        >•••</Button>
+        >
+          •••
+        </Button>
       </Menu.Target>
       <Menu.Dropdown>
-        { props?.filename && (
+        { currentFilename && (
           <Menu.Item>
             <CurrentFile
-              filename={ props?.filename }
               buttonColor="black"
-              onResetFile={ props?.onResetFile }
+              filename={ currentFilename }
+              onResetFile={ handleReset }
             />
           </Menu.Item>
         )}
         <Menu.Item
-          leftSection={ <Image src={githubMarkSvg} h={32} style={{ filter: 'invert(1)' }} /> }
+          leftSection={ <Image src={githubMarkSvg} h={32} w={33} style={{ filter: 'invert(1)' }} /> }
           component="a"
           href={__APP_REPO_URL__}
           target="_blank"
@@ -46,15 +58,15 @@ function Header(props: HeaderProps) {
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>
-  )
+  );
 
   const desktopContent = (
     <>
       <div>
-        { props?.filename && (
+        { currentFilename && (
           <CurrentFile
-            filename={ props?.filename }
-            onResetFile={ props?.onResetFile }
+            filename={ currentFilename }
+            onResetFile={ handleReset }
           />
         )}
       </div>
@@ -76,7 +88,7 @@ function Header(props: HeaderProps) {
   return (
     <Group px="md" h="100%" justify="space-between" className='app-header'>
       <Group>
-        {props?.filename && (
+        {currentFilename && (
           <Button onClick={props?.onToggleFilter}>
             <Image src={ props.isOpenFilter ? filterFullSvg : filteEmptySvg } w={ 32 } />
           </Button>
@@ -85,25 +97,6 @@ function Header(props: HeaderProps) {
       </Group>
 
       {props.isMobile ? mobileCntent : desktopContent}
-
-      {/* <div>{ props?.filename && (
-        <CurrentFile
-          filename={ props?.filename }
-          onResetFile={ props?.onResetFile }
-        />
-      )}</div>
-
-      <Group>
-        <Button
-          variant="transparent"
-          component="a"
-          href={ __APP_REPO_URL__ }
-          target="_blank"
-        >
-          <Image src={ githubMark } w={ 32 } h={ 32 } />
-        </Button>
-        <Text c="gray.4" mr="md">v{ __APP_VERSION__ }</Text>
-      </Group> */}
     </Group>
   );
 }

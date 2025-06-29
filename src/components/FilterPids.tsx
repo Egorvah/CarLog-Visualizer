@@ -1,34 +1,52 @@
-import { useState, useEffect } from 'react'
-import { ScrollArea, Switch, Divider, Input, Text, Button, Group, CloseButton } from '@mantine/core'
+import { useState, useEffect, useCallback } from 'react';
+import { ScrollArea, Switch, Divider, Input, Text, Button, Group, CloseButton } from '@mantine/core';
+import debounce from '../utils/debounce';
+import useChartStore from '../stores/useChartStore';
+import type { Pid } from '../types';
 
-interface FilterPidsProps {
-  pids: string[];
-  onActivePidsChange?: (activePids: string[]) => void;
+interface ComponentProps {
   onToggleFilter?: () => void;
 }
 
-function FilterPids(props: FilterPidsProps) {
-  const [activePids, setActivePids] = useState<string[]>([]);
-  const [filteredPids, setFilteredPids] = useState<string[]>(props.pids);
-  const [filterValue, setFilterValue] = useState('');
+function FilterPids({ onToggleFilter }: ComponentProps) {
+  const pids: Pid[] = useChartStore((state) => state.pids);
+  const activePids = useChartStore((state) => state.activePids);
+  const setActivePids = useChartStore((state) => state.setActivePids);
+  const [localActivePids, setLocalActivePids] = useState<Pid[]>(activePids);
+  const [filteredPids, setFilteredPids] = useState<Pid[]>(pids);
+  const [filterValue, setFilterValue] = useState<string>('');
 
-  useEffect(() => {
-    if (props?.pids) {
-      props?.onActivePidsChange?.(activePids);
-    }
-  }, [activePids]); // eslint-disable-line react-hooks/exhaustive-deps
+  const debouncedSetActivePids = useCallback(
+    debounce((newActivePids: Pid[]): void => {
+      setActivePids(newActivePids);
+    }, 500),
+    [setActivePids]
+  );
 
-  useEffect(() => {
+  useEffect(() => debouncedSetActivePids(localActivePids), [debouncedSetActivePids, localActivePids]);
+
+  const handleChangeFilterValue = (newVal: string) => {
     setFilteredPids(
-      props?.pids.filter((pid: string) => pid.toLowerCase().includes(filterValue.toLowerCase()))
+      pids.filter((pid: string) => pid.toLowerCase().includes(newVal.toLowerCase()))
     );
-  }, [props.pids, filterValue]);
+    setFilterValue(newVal);
+  };
 
   const togglePid = (event: React.ChangeEvent<HTMLInputElement>, pid: string) => {
     const newActivePids = event.currentTarget.checked
-      ? [...activePids, pid]
-      : activePids.filter((p) => p !== pid);
-    setActivePids(newActivePids);
+      ? [...localActivePids, pid]
+      : localActivePids.filter((p) => p !== pid);
+    setLocalActivePids(newActivePids);
+  };
+
+  if (pids.length && !filteredPids.length && filterValue.length === 0) {
+    setFilteredPids(pids);
+  }
+
+  if (pids.length < 1) {
+    return (
+      <Text size="md" mt="md" mb="xs">PIDs not found.</Text>
+    );
   }
 
   return (
@@ -39,16 +57,16 @@ function FilterPids(props: FilterPidsProps) {
           <Button
             variant="outline"
             size="xs"
-            onClick={() => setActivePids([])}
-            disabled={activePids.length === 0}
+            onClick={() => setLocalActivePids([])}
+            disabled={localActivePids.length === 0}
           >
             Clear All
           </Button>
           <Button
             variant="outline"
             size="xs"
-            onClick={() => setActivePids(filteredPids)}
-            disabled={filteredPids.length === 0 || filteredPids.length === activePids.length}
+            onClick={() => setLocalActivePids(filteredPids)}
+            disabled={filteredPids.length === 0 || filteredPids.length === localActivePids.length}
           >
             Select All
           </Button>
@@ -58,14 +76,14 @@ function FilterPids(props: FilterPidsProps) {
       <Input
         placeholder="Filter"
         value={filterValue}
-        onChange={(event) => setFilterValue(event.currentTarget.value)}
+        onChange={(event) => handleChangeFilterValue(event.currentTarget.value)}
         size="sm"
         mr="md"
         rightSectionPointerEvents="all"
         rightSection={
           <CloseButton
             aria-label="Clear input"
-            onClick={() => setFilterValue('')}
+            onClick={() => handleChangeFilterValue('')}
             style={{ display: filterValue ? undefined : 'none' }}
           />
         }
@@ -78,7 +96,7 @@ function FilterPids(props: FilterPidsProps) {
             <Switch
               label={pid}
               withThumbIndicator={false}
-              checked={activePids.includes(pid)}
+              checked={localActivePids.includes(pid)}
               onChange={(event) => togglePid(event, pid)}
             />
             {index < filteredPids.length - 1 && (
@@ -92,10 +110,11 @@ function FilterPids(props: FilterPidsProps) {
           </div>
         )}
       </ScrollArea>
-      <Button mt="md" mr="md" onClick={props.onToggleFilter} >
+
+      <Button mt="md" mr="md" onClick={onToggleFilter} >
          Collapse
       </Button>
     </>
-  )
+  );
 }
 export default FilterPids;
