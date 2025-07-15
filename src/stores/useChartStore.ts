@@ -1,13 +1,5 @@
 import { create } from 'zustand';
-import type { Pid } from '../types';
-
-interface ChartStoreState {
-  pids: Pid[],
-  activePids: Pid[],
-  setPids: (pids: Pid[]) => void,
-  setActivePids: (activePids: Pid[]) => void,
-  clearAll: () => void,
-}
+import type { ChartStoreState, Pid } from '@/types';
 
 const useChartStore = create<ChartStoreState>((set) => ({
   pids: [],

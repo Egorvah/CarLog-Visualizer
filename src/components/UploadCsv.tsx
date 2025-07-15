@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { FileButton, Button, Loader } from '@mantine/core';
-import Papa from 'papaparse';
-import { isValidCsv } from '../utils/csv';
-import useFileStore from '../stores/useFileStore';
-
-import type { CsvDataItem } from '../types';
+import { parse } from 'papaparse';
+import { detect } from 'chardet';
+import { getFileType } from '@/utils/csv';
+import useFileStore from '@/stores/useFileStore';
+import type { CsvData } from '@/types';
 
 interface ComponentProps {
   onError?: (error: string) => void;
@@ -24,24 +24,27 @@ function UploadCsv(props: ComponentProps) {
 
     const reader = new FileReader();
     reader.onload = async ({ target }) => {
-      if (typeof target?.result === 'string') {
-        const csv = Papa.parse(target.result, {
-          header: true,
-        });
+      const arrayBuffer = target?.result as ArrayBuffer;
+      const byteArray = new Uint8Array(arrayBuffer);
+      const encoding = detect(byteArray) || 'UTF-8';
 
-        const data = csv.data as CsvDataItem[];
-        if (!isValidCsv(data)) {
-          props.onError?.(`${ file.name } is not a valid CSV file.\nPlease upload a file with the correct format.`);
-          setTimeout(() => setLoading(false), 450);
-          return;
-        }
-        addFile(file.name, data);
-        setLoading(false);
-      } else {
-        props.onError?.('Failed to read file as text.');
+      const fileContent = new TextDecoder(encoding).decode(arrayBuffer);
+      const csv = parse(fileContent, {
+        header: false,
+        skipEmptyLines: 'greedy',
+      });
+
+      const data = csv.data as CsvData;
+      const fileType = getFileType(data);
+      if (fileType == null) {
+        props.onError?.(`${ file.name } is not a valid CSV file.\nPlease upload a file with the correct format.`);
+        setTimeout(() => setLoading(false), 450);
+        return;
       }
+      addFile(file.name, fileType);
+      setLoading(false);
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   if (loading) {
@@ -49,8 +52,8 @@ function UploadCsv(props: ComponentProps) {
   }
 
   return (
-    <FileButton onChange={handleFileChange} accept="text/csv">
-      {(props) => <Button {...props}>Upload CSV File</Button>}
+    <FileButton onChange={ handleFileChange } accept="text/csv">
+      {(props) => <Button { ...props }>Upload CSV File</Button>}
     </FileButton>
   );
 }

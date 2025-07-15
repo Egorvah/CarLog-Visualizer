@@ -8,12 +8,12 @@ import {
 } from 'chart.js';
 import type { ChartOptions, ChartData as ChartJsData, ChartDataset } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { Box } from '@mantine/core';
+import { Box, Loader } from '@mantine/core';
 import { useInViewport } from '@mantine/hooks';
-import { getDatasets } from '../utils/chart';
-import customTooltip from '../utils/chartTooltipPlugin';
-import useDisplay from '../hooks/useDisplay';
-import type { Pid, ChartData, fromTo } from '../types';
+import { getDatasets } from '@/utils/chart';
+import customTooltip from '@/utils/chartTooltipPlugin';
+import useDisplay from '@/hooks/useDisplay';
+import type { Pid, ChartData, fromTo } from '@/types';
 
 ChartJS.register(
   LinearScale,
@@ -22,6 +22,29 @@ ChartJS.register(
   Title,
   customTooltip,
 );
+
+const chartColors = {
+  axis: '#B0B0B0',
+  axisText: '#333333',
+  grid: '#E8E8E8',
+};
+
+const axisConfig = {
+  type: 'linear',
+  ticks: {
+    minRotation: 0,
+    maxRotation: 0,
+    sampleSize: 8,
+    color: chartColors.axisText,
+  },
+  grid: {
+    color: chartColors.grid,
+    tickColor: chartColors.axis,
+  },
+  border: {
+    color: chartColors.axis,
+  },
+} as const;
 
 interface ComponentProps {
   chartData: ChartData,
@@ -47,23 +70,11 @@ function Chart({ chartData, fromTo, pids, height }: ComponentProps) {
     parsing: false,
     scales: {
       x: {
-        type: 'linear',
+        ...axisConfig,
         min: fromTo[0],
         max: fromTo[1],
-        ticks: {
-          minRotation: 0,
-          maxRotation: 0,
-          sampleSize: 8,
-        },
       },
-      y: {
-        type: 'linear',
-        ticks: {
-          minRotation: 0,
-          maxRotation: 0,
-          sampleSize: 6,
-        },
-      },
+      y: axisConfig,
     },
   };
 
@@ -72,9 +83,9 @@ function Chart({ chartData, fromTo, pids, height }: ComponentProps) {
   };
 
   return (
-    <Box ref={ref} h={height}>
+    <Box ref={ ref } h={ height }>
       {inViewport && 
-        <Line options={options} data={lineData} />
+        <Line options={ options } data={ lineData } fallbackContent={ <Loader /> }/>
       }
     </Box>
   );

@@ -1,12 +1,13 @@
-import throttle from './throttle';
-import { sortNearestPoints } from './chart';
+import { kdTree } from 'kd-tree-javascript';
+import throttle from '@/utils/throttle';
+import { sortNearestPoints } from '@/utils/chart';
 import type { Color, Point } from 'chart.js';
 import type {
   ChartWithTooltip,
   NearestPoint,
   ChartEventArgs,
   CustomTooltip,
-} from '../types';
+} from '@/types';
 
 import { createStore } from 'zustand/vanilla';
 import { combine } from 'zustand/middleware';
@@ -18,34 +19,38 @@ const defaultTooltipState: CustomTooltip = {
   y: 0,
   xAxisPos: 0,
   yAxisPos: 0,
-};
+} as const;
 
 const tooltipStore = createStore(
   combine(
     {
-      tooltip: {...defaultTooltipState},
-      xAxis: [0,0]
-    }, 
+      tooltip: { ...defaultTooltipState },
+      xAxis: [0, 0],
+    },
     (set, get) => ({
-      setFreeze: (freeze: boolean) => set((state) => {
-        const newState = {...state};
-        newState.tooltip.freeze = freeze;
-        return newState;
-      }),
+      setFreeze: (freeze: boolean) =>
+        set((state) => {
+          const newState = { ...state };
+          newState.tooltip.freeze = freeze;
+          return newState;
+        }),
       update: (tooltip: CustomTooltip) => set({ tooltip }),
-      reset: () => set({ tooltip: {...defaultTooltipState} }),
+      reset: () => set({ tooltip: { ...defaultTooltipState } }),
       setXAxis: (from: number, to: number) => {
         const currentState = get().xAxis;
         if (currentState[0] !== from || currentState[1] !== to) {
           set({ xAxis: [from, to] });
-          set({ tooltip: {...defaultTooltipState} });
+          set({ tooltip: { ...defaultTooltipState } });
         }
       },
-    })
+    }),
   ),
 );
 
-const drawVerticalLine = (chart: ChartWithTooltip, xPos: number | undefined) => {
+const drawVerticalLine = (
+  chart: ChartWithTooltip,
+  xPos: number | undefined,
+): void => {
   if (xPos === undefined) {
     return;
   }
@@ -61,7 +66,7 @@ const drawVerticalLine = (chart: ChartWithTooltip, xPos: number | undefined) => 
   ctx.restore();
 };
 
-const drawCirclePoint = (chart: ChartWithTooltip, point: NearestPoint) => {
+const drawCirclePoint = (chart: ChartWithTooltip, point: NearestPoint): void => {
   const pointX = chart.scales.x.getPixelForValue(point.x);
   const pointY = chart.scales.y.getPixelForValue(point.y);
 
@@ -77,7 +82,10 @@ const drawCirclePoint = (chart: ChartWithTooltip, point: NearestPoint) => {
   ctx.restore();
 };
 
-const drawTooltipContainer = (chart: ChartWithTooltip, nearestPoints: NearestPoint[]) => {
+const drawTooltipContainer = (
+  chart: ChartWithTooltip,
+  nearestPoints: NearestPoint[],
+): void => {
   const ctx = chart.ctx;
   const tooltip = tooltipStore.getState().tooltip;
 
@@ -96,13 +104,15 @@ const drawTooltipContainer = (chart: ChartWithTooltip, nearestPoints: NearestPoi
   const pointMarkerWidth = 10;
   const pointMarkerHeight = 10;
 
-
-  const getPointText = (point: NearestPoint) => `${point.label}: ${point.y.toFixed(2)}`;
+  const getPointText = (point: NearestPoint) =>
+    `${point.label}: ${point.y.toFixed(2)}`;
 
   const pointWidthList = nearestPoints.map((point: NearestPoint) => {
     ctx.font = baseFont;
-    return ctx.measureText(getPointText(point)).width + 
-      ((pointLeftPadding * 2) + pointMarkerWidth + pointRightPadding);
+    return (
+      ctx.measureText(getPointText(point)).width +
+      (pointLeftPadding * 2 + pointMarkerWidth + pointRightPadding)
+    );
   });
 
   const tooltipWidth = Math.max(tooltipDefaultWidth, ...pointWidthList);
@@ -113,10 +123,11 @@ const drawTooltipContainer = (chart: ChartWithTooltip, nearestPoints: NearestPoi
   }
   ctx.save();
   ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-  const tooltipHeight = Math.min(maxHeight, 30 + (nearestPoints.length * 20));
-  const tooltipY = tooltip.y + tooltipHeight < chart.chartArea.bottom
-    ? tooltip.y + 10
-    : (chart.chartArea.bottom - tooltipHeight) / 2;
+  const tooltipHeight = Math.min(maxHeight, 30 + nearestPoints.length * 20);
+  const tooltipY =
+    tooltip.y + tooltipHeight < chart.chartArea.bottom
+      ? tooltip.y + 10
+      : (chart.chartArea.bottom - tooltipHeight) / 2;
   ctx.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
 
   ctx.fillStyle = '#fff';
@@ -124,11 +135,10 @@ const drawTooltipContainer = (chart: ChartWithTooltip, nearestPoints: NearestPoi
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText('⏱️', tooltipX + 6, tooltipY + 15);
-  
+
   ctx.font = baseFont;
   const time = tooltip.xAxisPos.toFixed(3);
   ctx.fillText(`: ${time} sec.`, tooltipX + 26, tooltipY + 15);
-
 
   if (tooltip.freeze) {
     ctx.textAlign = 'right';
@@ -139,7 +149,7 @@ const drawTooltipContainer = (chart: ChartWithTooltip, nearestPoints: NearestPoi
   const pointStartY = tooltipY + 30;
   nearestPoints.forEach((point: NearestPoint, index: number) => {
     // Draw point if height of tooltip is enough
-    if (40 + (index * 20) > tooltipHeight) {
+    if (40 + index * 20 > tooltipHeight) {
       return;
     }
 
@@ -149,21 +159,40 @@ const drawTooltipContainer = (chart: ChartWithTooltip, nearestPoints: NearestPoi
 
     // point color marker
     ctx.fillStyle = point.color;
-    ctx.fillRect(tooltipX + pointLeftPadding, pointStartY + topPadding, pointMarkerWidth, pointMarkerHeight);
+    ctx.fillRect(
+      tooltipX + pointLeftPadding,
+      pointStartY + topPadding,
+      pointMarkerWidth,
+      pointMarkerHeight,
+    );
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#fff';
-    ctx.strokeRect(tooltipX + pointLeftPadding, pointStartY + topPadding, pointMarkerWidth, pointMarkerHeight);
+    ctx.strokeRect(
+      tooltipX + pointLeftPadding,
+      pointStartY + topPadding,
+      pointMarkerWidth,
+      pointMarkerHeight,
+    );
 
     // point text
     ctx.fillStyle = '#fff';
-    ctx.fillText(getPointText(point), tooltipX + (pointLeftPadding * 2) + pointMarkerWidth, pointStartY + 5 + topPadding);
+    ctx.fillText(
+      getPointText(point),
+      tooltipX + pointLeftPadding * 2 + pointMarkerWidth,
+      pointStartY + 5 + topPadding,
+    );
   });
 };
 
-const getNearestPoints = (chart: ChartWithTooltip, xPos: number | undefined): NearestPoint[] => {
+const getNearestPoints = (
+  chart: ChartWithTooltip,
+  xPos: number | undefined,
+): NearestPoint[] => {
   if (xPos === undefined) {
     return [];
   }
+
+  const distanceX = (a: Point, b: Point) => Math.abs(a.x - b.x);
 
   const nearestPoints = [];
   for (const datasetIndex in chart.data.datasets) {
@@ -175,16 +204,10 @@ const getNearestPoints = (chart: ChartWithTooltip, xPos: number | undefined): Ne
     if (dataset?.data?.length < 1) {
       return [];
     }
-    const data: Point[] = dataset?.data as Point[];
 
-    // Find the nearest point before or equal to xValue
-    const nearestPoint: Point = data.reduce((prev: Point, curr: Point) => {
-      return (curr.x <= xPos && (curr.x > prev.x)) ? curr : prev;
-    }, data[0]);
-
-    if (!nearestPoint) {
-      continue;
-    }
+    const tree = new kdTree(dataset?.data as Point[], distanceX, ['x']);
+    const nearest = tree.nearest({ x: xPos, y: 0 }, 1);
+    const nearestPoint: Point = nearest[0][0];
 
     nearestPoints.push({
       label: dataset.label,
@@ -197,42 +220,47 @@ const getNearestPoints = (chart: ChartWithTooltip, xPos: number | undefined): Ne
   return sortNearestPoints(nearestPoints);
 };
 
-const handleSetTooltipData = throttle((chart: ChartWithTooltip, args: ChartEventArgs) => {
-  const tooltip = tooltipStore.getState().tooltip;
-  const eventType = args?.event?.type;
-  const inChartArea = args?.inChartArea;
+const handleSetTooltipData = throttle(
+  (chart: ChartWithTooltip, args: ChartEventArgs): void => {
+    const tooltip = tooltipStore.getState().tooltip;
+    const eventType = args?.event?.type;
+    const inChartArea = args?.inChartArea;
 
-  if (inChartArea && eventType === 'click') {
-    if (tooltip.active && !tooltip.freeze) {
-      tooltipStore.getState().setFreeze(true);
-    } else {
-      tooltipStore.getState().reset();
+    if (inChartArea && eventType === 'click') {
+      if (tooltip.active && !tooltip.freeze) {
+        tooltipStore.getState().setFreeze(true);
+      } else {
+        tooltipStore.getState().reset();
+      }
+      return;
     }
-    return;
-  }
-  
-  if (tooltip.freeze) {
-    return;
-  }
 
-  if (inChartArea && eventType === 'mousemove') {
-    tooltip.x = args.event.x ?? 0;
-    tooltip.y = args.event.y ?? 0;
-    tooltip.xAxisPos = chart.scales.x.getValueForPixel(tooltip.x) ?? 0;
-    tooltip.yAxisPos = chart.scales.y.getValueForPixel(tooltip.y) ?? 0;
-    tooltip.freeze = false;
-    tooltip.active = true;
+    if (tooltip.freeze) {
+      return;
+    }
 
-    tooltipStore.getState().update(tooltip);
-  }
-}, 5);
+    if (inChartArea && eventType === 'mousemove') {
+      tooltip.x = args.event.x ?? 0;
+      tooltip.y = args.event.y ?? 0;
+      tooltip.xAxisPos = chart.scales.x.getValueForPixel(tooltip.x) ?? 0;
+      tooltip.yAxisPos = chart.scales.y.getValueForPixel(tooltip.y) ?? 0;
+      tooltip.freeze = false;
+      tooltip.active = true;
+
+      tooltipStore.getState().update(tooltip);
+    }
+  },
+  5,
+);
 
 const customTooltipPlugin = {
   id: 'customTooltip',
 
-  afterLayout(chart: ChartWithTooltip) {
+  afterLayout(chart: ChartWithTooltip): void {
     setTimeout(() => {
-      tooltipStore.getState().setXAxis(chart?.scales?.x?.min, chart?.scales?.x?.max);
+      tooltipStore
+        .getState()
+        .setXAxis(chart?.scales?.x?.min, chart?.scales?.x?.max);
     }, 1);
 
     if (chart._customTooltipSubscription == null) {
@@ -245,50 +273,47 @@ const customTooltipPlugin = {
     }
   },
 
-  afterDestroy(chart: ChartWithTooltip) {
+  afterDestroy(chart: ChartWithTooltip): void {
     if (chart._customTooltipSubscription != null) {
       chart._customTooltipSubscription();
     }
   },
 
-  afterDraw: (chart: ChartWithTooltip) => {
+  afterDraw: (chart: ChartWithTooltip): void => {
     const tooltip = tooltipStore.getState().tooltip;
-    
     if (!tooltip.active) {
       return;
     }
 
     const lineX = chart.scales.x.getPixelForValue(tooltip.xAxisPos);
     drawVerticalLine(chart, lineX);
+
     const nearestPoints = getNearestPoints(chart, tooltip.xAxisPos);
     if (nearestPoints?.length) {
-      nearestPoints.forEach(point => {
-        drawCirclePoint(chart, point);
-      });
+      nearestPoints.forEach((point) => drawCirclePoint(chart, point));
       drawTooltipContainer(chart, nearestPoints);
     }
   },
 
-  afterEvent(chart: ChartWithTooltip, args: ChartEventArgs) {
+  afterEvent(chart: ChartWithTooltip, args: ChartEventArgs): void {
     const tooltip = tooltipStore.getState().tooltip;
     const eventType = args?.event?.type;
     const inChartArea = args?.inChartArea;
 
     if (
       (
-        eventType === 'mouseout' || 
+        eventType === 'mouseout' ||
         (eventType === 'mousemove' && !inChartArea)
       ) &&
-      tooltip.active && !tooltip.freeze
+      tooltip.active &&
+      !tooltip.freeze
     ) {
-      setTimeout(() => {
-        tooltipStore.getState().reset();
-      }, 1);
+      setTimeout(() => tooltipStore.getState().reset(), 1);
       return;
     }
 
     handleSetTooltipData(chart, args);
-  }
+  },
 };
 
 export default customTooltipPlugin;

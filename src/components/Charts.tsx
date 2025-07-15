@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react';
 import { Flex, Title, Text, Button, Center, RangeSlider } from '@mantine/core';
-import useChartData from '../hooks/useChartData';
-import ContentCenter from './ContentCenter';
-import Chart from './Chart';
-import useFileStore from '../stores/useFileStore';
-import useChartStore from '../stores/useChartStore';
-import type { CsvDatasets, fromTo, Pid } from '../types';
+import useChartData from '@/hooks/useChartData';
+import ContentCenter from '@/components/ContentCenter';
+import Chart from '@/components/Chart';
+import useFileStore from '@/stores/useFileStore';
+import useChartStore from '@/stores/useChartStore';
+import type { CsvDatasets, fromTo, Pid } from '@/types';
 
 interface ComponentProps {
   isOpenFilter?: boolean;
@@ -13,7 +13,7 @@ interface ComponentProps {
 }
 
 function Charts(props: ComponentProps) {
-  const ref = useRef<HTMLDivElement | undefined>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const datasets: CsvDatasets = useFileStore((state) => state.files);
   const activePids: Pid[] = useChartStore((state) => state.activePids);
   const prevPids = useChartStore((state) => state.pids);
@@ -46,14 +46,18 @@ function Charts(props: ComponentProps) {
     setChartFromTo(xRange);
   }
 
+  if (activePids.length === 1 && !singleChart) {
+    setSingleChart(true);
+  }
+
   if (activePids.length === 0) {
     return (
-      <ContentCenter ref={ref}>
-          <Title order={3} ta="center">No active PIDs selected</Title>
+      <ContentCenter ref={ ref }>
+          <Title order={ 3 } ta="center">No active PIDs selected</Title>
           <Text ta="center">Please select at least one PID to display the chart.</Text>
           { !props.isOpenFilter && (
             <Center mt="md">
-              <Button w="fit-content" onClick={props.onToggleFilter}>
+              <Button w="fit-content" onClick={ props.onToggleFilter }>
                 Open Filter
               </Button>
             </Center>
@@ -66,16 +70,17 @@ function Charts(props: ComponentProps) {
     <Flex w="100%" direction="column" gap="md">
       <Button.Group>
         <Button
-          variant={singleChart ? 'filled' : 'outline'}
+          variant={ singleChart ? 'filled' : 'outline' }
           size="xs"
-          onClick={() => setSingleChart(true)}
+          onClick={ () => setSingleChart(true) }
         >
           Single chart
         </Button>
         <Button
-          variant={!singleChart ? 'filled' : 'outline'}
+          variant={ !singleChart ? 'filled' : 'outline' }
           size="xs"
-          onClick={() => setSingleChart(false)}
+          onClick={ () => setSingleChart(false) }
+          disabled={ activePids.length < 2 }
         >
           Multiple charts
         </Button>
@@ -83,33 +88,33 @@ function Charts(props: ComponentProps) {
 
       { xRange[1] > 0 &&
         <RangeSlider
-          size='xl'
-          px='xl'
+          size="xl"
+          px="xl"
           // labelAlwaysOn={true}
-          min={xRange[0]}
-          max={xRange[1] + 1}
-          onChangeEnd={setChartFromTo}
+          min={ xRange[0] }
+          max={ xRange[1] + 1 }
+          onChangeEnd={ setChartFromTo }
         />
       }
 
       {/* Single chart */}
       {isExistsChardData() && singleChart && (
         <Chart
-          chartData={chartData}
-          fromTo={chartFromTo}
-          pids={activePids}
-          height={getChartHeight()}
+          chartData={ chartData }
+          fromTo={ chartFromTo }
+          pids={ activePids }
+          height={ getChartHeight() }
         />
       )}
 
       {/* Multiple charts */}
       {isExistsChardData() && !singleChart && activePids.map((pid) => (
         <Chart
-          key={pid}
-          chartData={chartData}
-          fromTo={chartFromTo}
-          pids={[pid]}
-          height={getChartHeight()}
+          key={ pid }
+          chartData={ chartData }
+          fromTo={ chartFromTo }
+          pids={ [pid] }
+          height={ getChartHeight() }
         />
       ))}
     </Flex>

@@ -1,12 +1,5 @@
 import { create } from 'zustand';
-import type { CsvDataItem, CsvDatasets } from '../types';
-
-interface FileStoreState {
-  files: CsvDatasets,
-  currentFilename: string | null,
-  addFile: (filename: string, data: CsvDataItem[]) => void
-  removeFile: (filename: string) => void
-}
+import type { FileStoreState } from '@/types';
 
 const useFileStore = create<FileStoreState>((set) => ({
   files: {},
