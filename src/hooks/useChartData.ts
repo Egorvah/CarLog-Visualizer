@@ -2,27 +2,21 @@ import { useState, useMemo } from 'react';
 import { sortPids } from '@/utils/chart';
 import type { CsvDatasets, CsvDataset, ChartData, Pid, fromTo } from '@/types';
 
-const useChartData = (datasets: CsvDatasets, activeDataset: string | null, activePids: Pid[]) => {
+const useChartData = (datasets: CsvDatasets, activePids: Pid[]) => {
   const [chartData, setChartData] = useState<ChartData>({});
   const [xRange, setXRange] = useState<fromTo>([0, 0]);
 
-  const isCompareMode = (): boolean => {
-    return Object.keys(datasets).length > 1 && activeDataset === null;
+  const getActiveDataset = (datasets: CsvDatasets): CsvDataset => {
+    return datasets[Object.keys(datasets)[0]];
   };
 
-  const getActiveDataset = (): CsvDataset => {
-    return isCompareMode()
-      ? datasets[Object.keys(datasets)[0]]
-      : datasets[activeDataset ?? Object.keys(datasets)[0]];
-  };
-
-  const getPids = () => {
-    const dataset = getActiveDataset();
+  const getPids = (datasets: CsvDatasets) => {
+    const dataset = getActiveDataset(datasets);
     return sortPids(dataset?.getPids() || []);
   };
 
-  const startProcessing = () => {
-    if (activePids.length < 1) {
+  const startProcessing = (datasets: CsvDatasets) => {
+    if (activePids.length < 1 && chartData.length) {
       setChartData({});
     }
 
@@ -40,9 +34,8 @@ const useChartData = (datasets: CsvDatasets, activeDataset: string | null, activ
       });
     }
 
-
     if (addPids.length) {
-      const dataset = getActiveDataset();
+      const dataset = getActiveDataset(datasets);
       const result = dataset.getChartData(addPids);
       newChartData = {...newChartData,  ...result.data};
       setXRange(result.xRange);
@@ -52,11 +45,11 @@ const useChartData = (datasets: CsvDatasets, activeDataset: string | null, activ
   };
 
   const pids: Pid[] = useMemo(
-    () => getPids(),
+    () => getPids(datasets),
     [datasets]
   );
 
-  useMemo(startProcessing, [activePids]);
+  startProcessing(datasets);
   
   return {
     data: chartData,

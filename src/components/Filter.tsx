@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ScrollArea, Switch, Divider, Input, Text, Button, Group, CloseButton } from '@mantine/core';
 import debounce from '@/utils/debounce';
 import useChartStore from '@/stores/useChartStore';
@@ -24,7 +24,9 @@ function Filter({ onToggleFilter }: ComponentProps) {
     [setActivePids]
   );
 
-  useEffect(() => debouncedSetActivePids(localActivePids), [debouncedSetActivePids, localActivePids]);
+  if (localActivePids !== activePids && pids.length > 0) {
+    debouncedSetActivePids(localActivePids);
+  }
 
   const handleChangeFilterValue = (newVal: string) => {
     setFilteredPids(

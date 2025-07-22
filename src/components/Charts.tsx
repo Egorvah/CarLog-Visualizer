@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, Fragment } from 'react';
 import { Flex, Title, Text, Button, Center, RangeSlider } from '@mantine/core';
 import useChartData from '@/hooks/useChartData';
 import ContentCenter from '@/components/ContentCenter';
@@ -19,7 +19,7 @@ function Charts(props: ComponentProps) {
   const prevPids = useChartStore((state) => state.pids);
   const setPids = useChartStore((state) => state.setPids);
   const [singleChart, setSingleChart] = useState(true);
-  const { data: chartData, pids, xRange } = useChartData(datasets, null, activePids || []);
+  const { data: chartData, pids, xRange } = useChartData(datasets, activePids || []);
   const [chartFromTo, setChartFromTo] = useState<fromTo>(xRange);
   const [height, setHeight] = useState<number>(0);
 
@@ -109,13 +109,15 @@ function Charts(props: ComponentProps) {
 
       {/* Multiple charts */}
       {isExistsChardData() && !singleChart && activePids.map((pid) => (
-        <Chart
-          key={ pid }
-          chartData={ chartData }
-          fromTo={ chartFromTo }
-          pids={ [pid] }
-          height={ getChartHeight() }
-        />
+        <Fragment key={ pid }>
+          <Title order={ 5 } ta="center">{ pid }</Title>
+          <Chart
+            chartData={ chartData }
+            fromTo={ chartFromTo }
+            pids={ [pid] }
+            height={ getChartHeight() }
+          />
+        </Fragment>
       ))}
     </Flex>
   );

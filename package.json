@@ -4,7 +4,7 @@
   "repo_url": "https://github.com/Egorvah/CarLog-Visualizer",
   "homepage": "https://egorvah.github.io/CarLog-Visualizer",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.8.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
