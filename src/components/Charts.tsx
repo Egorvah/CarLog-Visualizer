@@ -88,9 +88,10 @@ function Charts(props: ComponentProps) {
 
       { xRange[1] > 0 &&
         <RangeSlider
+          className="chart-range"
           size="xl"
           px="xl"
-          // labelAlwaysOn={true}
+          labelAlwaysOn={ true }
           min={ xRange[0] }
           max={ xRange[1] + 1 }
           onChangeEnd={ setChartFromTo }

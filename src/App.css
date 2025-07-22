@@ -8,3 +8,7 @@
     white-space: pre-line;
   }
 }
+
+.chart-range .mantine-Slider-label {
+  top: calc(1.45rem * var(--mantine-scale));  
+}
