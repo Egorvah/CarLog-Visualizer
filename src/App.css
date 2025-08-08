@@ -12,3 +12,13 @@
 .chart-range .mantine-Slider-label {
   top: calc(1.45rem * var(--mantine-scale));  
 }
+
+.question-circle-icon {
+  cursor: help;
+  display: inline;
+  margin-left: 0.4em;
+  margin-bottom: -0.29em;
+  filter: brightness(0) saturate(100%) invert(28%) sepia(96%) saturate(1012%) hue-rotate(184deg) brightness(103%) contrast(91%);
+  width: 1.2em;
+  height: 1.2em;
+}

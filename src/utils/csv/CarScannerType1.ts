@@ -24,7 +24,9 @@ class CarScannerType1 extends BaseCsv implements CsvDataset {
   }
 
   public isValidData(): boolean {
-    return this.data?.[this.lastHeaderRow]?.includes(this.columnNames.time);
+    const header = this.data?.[this.lastHeaderRow];
+    const expectedColumns = Object.values(this.columnNames);
+    return expectedColumns.every((col) => header?.includes(col));
   }
 
   public getPids(): Pid[] {

@@ -1,4 +1,4 @@
-import { useState, useRef, Fragment } from 'react';
+import { useState, useRef } from 'react';
 import { Flex, Title, Text, Button, Center, RangeSlider } from '@mantine/core';
 import useChartData from '@/hooks/useChartData';
 import ContentCenter from '@/components/ContentCenter';
@@ -67,7 +67,7 @@ function Charts(props: ComponentProps) {
   }
 
   return (
-    <Flex w="100%" direction="column" gap="md">
+    <Flex w="100%" direction="column" gap="sm">
       <Button.Group>
         <Button
           variant={ singleChart ? 'filled' : 'outline' }
@@ -91,6 +91,7 @@ function Charts(props: ComponentProps) {
           className="chart-range"
           size="xl"
           px="xl"
+          mb="md"
           labelAlwaysOn={ true }
           min={ xRange[0] }
           max={ xRange[1] + 1 }
@@ -110,15 +111,22 @@ function Charts(props: ComponentProps) {
 
       {/* Multiple charts */}
       {isExistsChardData() && !singleChart && activePids.map((pid) => (
-        <Fragment key={ pid }>
-          <Title order={ 5 } ta="center">{ pid }</Title>
+        <div key={ pid }>
+          <Title
+            order={ 5 }
+            ta="center"
+            p="0"
+            m="0"
+          >
+            { pid }
+          </Title>
           <Chart
             chartData={ chartData }
             fromTo={ chartFromTo }
             pids={ [pid] }
             height={ getChartHeight() }
           />
-        </Fragment>
+        </div>
       ))}
     </Flex>
   );

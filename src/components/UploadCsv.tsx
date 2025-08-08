@@ -1,23 +1,20 @@
 import { useState } from 'react';
-import { FileButton, Button, Loader } from '@mantine/core';
+import { FileButton, Button, Loader, Modal, Alert } from '@mantine/core';
 import { parse } from 'papaparse';
 import { detect } from 'chardet';
 import { getFileType } from '@/utils/csv';
 import useFileStore from '@/stores/useFileStore';
 import type { CsvData } from '@/types';
 
-interface ComponentProps {
-  onError?: (error: string) => void;
-}
-
-function UploadCsv(props: ComponentProps) {
+function UploadCsv() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const addFile = useFileStore((state) => state.addFile);
 
   const handleFileChange = (file: File | null) => {
     setLoading(true);
     if (!file) {
-      props.onError?.('No file selected');
+      setError('No file selected');
       setLoading(false);
       return;
     }
@@ -37,7 +34,7 @@ function UploadCsv(props: ComponentProps) {
       const data = csv.data as CsvData;
       const fileType = getFileType(data);
       if (fileType == null) {
-        props.onError?.(`${ file.name } is not a valid CSV file.\nPlease upload a file with the correct format.`);
+        setError(`${ file.name } is not a valid CSV file.\nPlease upload a file with the correct format.`);
         setTimeout(() => setLoading(false), 450);
         return;
       }
@@ -47,14 +44,30 @@ function UploadCsv(props: ComponentProps) {
     reader.readAsArrayBuffer(file);
   };
 
-  if (loading) {
-    return (<Loader />);
-  }
-
   return (
-    <FileButton onChange={ handleFileChange } accept="text/csv">
-      {(props) => <Button { ...props }>Upload CSV File</Button>}
-    </FileButton>
+    <>
+      { loading
+        ? <Loader />
+        :
+          <FileButton onChange={ handleFileChange } accept="text/csv">
+            {(props) => <Button { ...props }>Upload CSV File</Button>}
+          </FileButton>
+      }
+
+      {error && (
+        <Modal
+          title="Error"
+          className="error-modal"
+          opened={ error != null } 
+          onClose={ () => setError(null) }  
+          centered
+        >
+          <Alert color="red" variant="filled" className="message">
+            {error}
+          </Alert>
+        </Modal>
+      )}
+    </>
   );
 }
 
